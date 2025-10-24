@@ -1,4 +1,4 @@
-# 🏥 SmartClinic - Offline Clinic Management System
+# 🏥 Doctors Desk - Offline Clinic Management System
 
 A cross-platform desktop application for doctors to manage their clinics entirely offline. Built with **Tauri + React + TypeScript + SQLite**.
 
@@ -35,7 +35,7 @@ A cross-platform desktop application for doctors to manage their clinics entirel
 
 ### 💾 Offline Database
 - **100% offline** - no internet required
-- Local SQLite database (`smartclinic.db`)
+- Local SQLite database (`Doctors Desk.db`)
 - Automatic database initialization
 - Data persists in app data directory
 
@@ -114,7 +114,7 @@ npm run tauri:build
 ```
 
 Output locations:
-- **Windows**: `src-tauri/target/release/SmartClinic.exe`
+- **Windows**: `src-tauri/target/release/Doctors Desk.exe`
 - **Windows Installer**: `src-tauri/target/release/bundle/msi/`
 - **macOS**: `src-tauri/target/release/bundle/macos/`
 - **macOS DMG**: `src-tauri/target/release/bundle/dmg/`
@@ -151,7 +151,7 @@ Output locations:
 ## 📁 Project Structure
 
 ```
-SmartClinic/
+Doctors Desk/
 ├── src/                      # React frontend
 │   ├── api/
 │   │   └── tauri.ts         # Tauri command wrappers
@@ -179,7 +179,7 @@ SmartClinic/
 
 ## 🗄️ Database Schema
 
-The SQLite database (`smartclinic.db`) includes:
+The SQLite database (`Doctors Desk.db`) includes:
 
 ### Users Table
 ```sql
@@ -259,9 +259,9 @@ The prescription format is in `src/pages/PrescriptionPrint.tsx`. Adjust the JSX 
 
 ### Database Location
 The database is stored in the OS-specific app data directory:
-- **Windows**: `%APPDATA%/SmartClinic/smartclinic.db`
-- **macOS**: `~/Library/Application Support/SmartClinic/smartclinic.db`
-- **Linux**: `~/.local/share/SmartClinic/smartclinic.db`
+- **Windows**: `%APPDATA%/Doctors Desk/Doctors Desk.db`
+- **macOS**: `~/Library/Application Support/Doctors Desk/Doctors Desk.db`
+- **Linux**: `~/.local/share/Doctors Desk/Doctors Desk.db`
 
 ## 🐛 Troubleshooting
 

@@ -1,9 +1,19 @@
-# 🚀 Quick Start Guide - SmartClinic
+# 🚀 Quick Start Guide - Doctors Desk
 
 ## Run the App NOW!
 
 ### Web Development Mode (Fast)
 ```bash
+npm run dev
+```
+Then open http://localhost:5173/ in your browser.
+
+**Login**: username `bijoy` password `admin`
+
+### Desktop Mode (Full Features)
+```bash
+npm run tauri:dev
+```
 npm run dev
 ```
 Then open http://localhost:5173/ in your browser.

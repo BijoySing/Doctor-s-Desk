@@ -7,7 +7,7 @@
     "distDir": "../dist"
   },
   "package": {
-    "productName": "SmartClinic",
+    "productName": "Doctor's Desk",
     "version": "0.1.0"
   },
   "tauri": {
@@ -28,7 +28,7 @@
     },
     "windows": [
       {
-        "title": "SmartClinic",
+        "title": "Doctor's Desk",
         "width": 1200,
         "height": 800,
         "resizable": true,
