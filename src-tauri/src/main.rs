@@ -12,7 +12,7 @@ pub struct AppState {
 
 #[tauri::command]
 fn list_patients(state: State<AppState>) -> Result<serde_json::Value, String> {
-    let db = state.db.lock().unwrap();
+    let mut db = state.db.lock().unwrap();
     let mut stmt = db.prepare("SELECT id, name, age, gender, phone, address FROM patients")
         .map_err(|e| e.to_string())?;
     let rows = stmt
@@ -56,9 +56,27 @@ fn update_patient(state: State<AppState>, id: i64, name: String, age: i64, gende
 
 #[tauri::command]
 fn delete_patient(state: State<AppState>, id: i64) -> Result<String, String> {
-    let db = state.db.lock().unwrap();
-    db.execute("DELETE FROM patients WHERE id=?1", params![id])
-        .map_err(|e| e.to_string())?;
+    let mut db = state.db.lock().unwrap();
+    // Perform explicit deletes in a transaction to avoid foreign key constraint issues
+    // (some environments may not have PRAGMA foreign_keys enabled or cascade configured)
+    let tx = db.transaction().map_err(|e| e.to_string())?;
+    // Delete prescriptions belonging to visits of this patient
+    tx.execute(
+        "DELETE FROM prescriptions WHERE visit_id IN (SELECT id FROM visits WHERE patient_id=?1)",
+        params![id],
+    ).map_err(|e| e.to_string())?;
+    // Delete visits for this patient
+    tx.execute(
+        "DELETE FROM visits WHERE patient_id=?1",
+        params![id],
+    ).map_err(|e| e.to_string())?;
+    // Delete the patient
+    tx.execute(
+        "DELETE FROM patients WHERE id=?1",
+        params![id],
+    ).map_err(|e| e.to_string())?;
+    tx.commit().map_err(|e| e.to_string())?;
+    println!("Deleted patient {} and related records", id);
     Ok("ok".into())
 }
 
@@ -118,6 +136,30 @@ fn get_patient_visits(state: State<AppState>, patient_id: i64) -> Result<serde_j
         vec.push(r.map_err(|e| e.to_string())?);
     }
     Ok(serde_json::Value::Array(vec))
+}
+
+#[tauri::command]
+fn get_visit(state: State<AppState>, visit_id: i64) -> Result<serde_json::Value, String> {
+    let db = state.db.lock().unwrap();
+    let mut stmt = db.prepare("SELECT id, patient_id, date, notes FROM visits WHERE id=?1")
+        .map_err(|e| e.to_string())?;
+    let visit = stmt.query_row([visit_id], |r| {
+        Ok(serde_json::json!({
+            "id": r.get::<_, i64>(0)?,
+            "patient_id": r.get::<_, i64>(1)?,
+            "date": r.get::<_, String>(2)?,
+            "notes": r.get::<_, Option<String>>(3)?.unwrap_or_default(),
+        }))
+    }).map_err(|e| e.to_string())?;
+    Ok(visit)
+}
+
+#[tauri::command]
+fn delete_visit(state: State<AppState>, visit_id: i64) -> Result<(), String> {
+    let db = state.db.lock().unwrap();
+    db.execute("DELETE FROM visits WHERE id=?1", params![visit_id])
+        .map_err(|e| e.to_string())?;
+    Ok(())
 }
 
 #[tauri::command]
@@ -212,6 +254,8 @@ fn main() {
             verify_login,
             add_visit,
             get_patient_visits,
+            get_visit,
+            delete_visit,
             add_prescription,
             get_visit_prescriptions,
             get_statistics

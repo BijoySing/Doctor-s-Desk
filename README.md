@@ -9,7 +9,15 @@ A cross-platform desktop application for doctors to manage their clinics entirel
 - Default user: `bijoy` / `admin`
 - Credentials stored securely in SQLite
 
-### 👥 Patient Management
+### � Medicine Database
+- **300+ Bangladesh medicines** (expandable to 16,600+)
+- Search by brand name or generic name
+- Includes: strength, dosage form, manufacturer
+- Offline medicine database from MedEx Bangladesh
+- **Auto-scraper included** to collect all BD medicines
+- See [MEDICINE_DATABASE.md](MEDICINE_DATABASE.md) for details
+
+### �👥 Patient Management
 - Add, edit, and delete patients
 - Search patients by name
 - Store: name, age, gender, phone, address

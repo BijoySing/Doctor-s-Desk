@@ -1,17 +1,42 @@
-# Bangladesh Medicine Database
+# Bangladesh Medicine Database Collection
 
-This database contains comprehensive information about commonly prescribed medicines in Bangladesh.
+## Overview
+This project includes a web scraper to collect comprehensive Bangladesh medicine data from **MedEx Bangladesh** (medex.com.bd), the largest online medicine database in Bangladesh.
 
-## Data Source
+## Database Statistics
+- **Source**: MedEx Bangladesh (https://medex.com.bd/brands)
+- **Total Pages**: 830
+- **Estimated Medicines**: 16,600+
+- **Current Database**: 300+ medicines (can be expanded to full database)
+- **Data Includes**: Brand name, Generic name, Strength, Dosage form, Manufacturer
 
-The medicine data has been compiled from:
-- **Medex.com.bd** - Bangladesh's leading online medicine database
-- **Kaggle Dataset**: [Assorted Medicine Dataset of Bangladesh](https://www.kaggle.com/ahmedshahriarsakib/assorted-medicine-dataset-of-bangladesh)
-- **GitHub Repository**: [bd-medicine-scraper](https://github.com/ahmedshahriar/bd-medicine-scraper)
+## Quick Start - Collect All Bangladesh Medicines
 
-## Dataset Information
+### 1. Install Python Dependencies
+```bash
+cd scripts
+pip install -r requirements.txt
+```
 
-The database includes **300+ medicines** with the following information:
+### 2. Run the Scraper
+```bash
+python scrape_medex_medicines.py
+```
+
+### 3. Choose Collection Size
+When prompted, select:
+- **Option 1**: Quick test (10 pages, ~200 medicines) - 1 minute
+- **Option 2**: Medium collection (100 pages, ~2,000 medicines) - 5 minutes
+- **Option 3**: Full database (830 pages, ~16,600 medicines) - 30 minutes **[RECOMMENDED]**
+
+### 4. Output Files
+The script generates:
+- `medicines_raw.json` - Raw JSON data for backup
+- `src/data/medicines.ts` - TypeScript database file (ready to use)
+
+## Current Dataset Information
+
+The database currently includes **300+ medicines** with the following information:
 - **Brand Name**: Commercial/trade name of the medicine
 - **Generic Name**: Active pharmaceutical ingredient (API)
 - **Strength**: Dosage strength (e.g., 500 mg, 10 mg)
@@ -126,17 +151,72 @@ const allGenerics = getUniqueGenerics()
 
 ## Features
 
-✅ **300+ medicines** from Bangladesh market
+✅ **300+ medicines** from Bangladesh market (expandable to 16,600+)
 ✅ **Brand name** with strength information
 ✅ **Generic name** for each medicine
 ✅ **Dosage form** (Tablet, Capsule, Injection, etc.)
+✅ **Manufacturer** information
 ✅ **Smart search** - Search by brand OR generic name
 ✅ **Real-time filtering** in the UI
 ✅ **Comprehensive coverage** of most prescribed categories
 
+## Important Notes
+
+### Rate Limiting
+- The scraper includes 2-second delays between requests to be respectful to the server
+- Full scraping (830 pages) takes approximately 30 minutes
+- Do not reduce the delay to avoid overwhelming the server
+
+### Data Quality
+- The scraper automatically:
+  - Parses medicine names to extract structured data
+  - Removes duplicates based on brand + strength
+  - Formats data for TypeScript integration
+  - Preserves manufacturer information
+
+### Legal & Ethical
+- This scraper is for **educational and personal use only**
+- MedEx Bangladesh data is publicly accessible
+- Please respect their terms of service
+- Consider supporting MedEx by using their official API if available
+
+## Troubleshooting
+
+### Error: Module not found
+```bash
+pip install -r requirements.txt
+```
+
+### Error: Connection timeout
+- Check your internet connection
+- The website might be temporarily unavailable
+- Try again later or reduce the number of pages
+
+### Error: No medicines collected
+- Website structure might have changed
+- Check if medex.com.bd is accessible in your browser
+- Report the issue for script updates
+
+## Backup Current Database
+
+Before running the scraper:
+```bash
+# Backup your current medicine database
+cp src/data/medicines.ts src/data/medicines.backup.ts
+```
+
 ## Updates
 
-The database can be easily extended by adding more entries to the `MEDICINES_DATABASE` array in `src/data/medicines.ts`.
+The database can be easily extended by:
+1. **Running the scraper** to collect all Bangladesh medicines (recommended)
+2. **Manual addition** by adding entries to `MEDICINES_DATABASE` array
+3. **Periodic updates** by re-running the scraper
+
+---
+
+**Last Updated**: October 27, 2025
+**Status**: Scraper Ready ✅
+**Database Version**: 1.0 (300+ medicines, expandable to 16,600+)
 
 ## Contributing
 

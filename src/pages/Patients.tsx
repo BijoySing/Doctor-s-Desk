@@ -11,6 +11,7 @@ export default function Patients() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [editingPatient, setEditingPatient] = useState<Patient | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Patient | null>(null)
   const [isDemoMode, setIsDemoMode] = useState(false)
 
   async function loadPatients() {
@@ -24,10 +25,9 @@ export default function Patients() {
     } catch (e) {
       const errorMsg = (e as Error).message
       console.error('listPatients error:', errorMsg)
-      
+
       // Only use demo mode if Tauri is not available
       if (errorMsg.includes('Tauri not available')) {
-        console.log('Running in demo mode (browser)')
         setIsDemoMode(true)
         setPatients([
           { id: 163, name: 'Kajol', age: 25, gender: 'Male', phone: '01993884832', address: 'Dhaka', created_at: '4/28/2024 5:26:09 PM' },
@@ -60,7 +60,7 @@ export default function Patients() {
       setEditingPatient(null)
       return
     }
-    
+
     try {
       if (editingPatient) {
         await updatePatient(editingPatient.id, patientData.name, patientData.age, patientData.gender, patientData.phone, patientData.address)
@@ -77,20 +77,42 @@ export default function Patients() {
   }
 
   async function handleDelete(id: number) {
-    if (isDemoMode) {
-      alert('⚠️ Demo Mode: Changes not saved.\n\nTo delete patients, run: npm run tauri:dev')
-      return
-    }
-    
-    if (!confirm('Are you sure you want to delete this patient?')) return
+
+    // Optimistic UI update + better error handling & logging
+    console.log('Attempting to delete patient', id)
+    const previous = patients
+    setPatients((prev) => prev.filter((p) => p.id !== id))
     try {
-      await deletePatient(id)
+      <p>are you sure you want to delete this patient?</p>
+      const res = await deletePatient(id)
+      console.log('deletePatient result:', res)
+      // Refresh list from backend to ensure consistency
       await loadPatients()
     } catch (error) {
-      alert('Failed to delete patient: ' + (error as Error).message)
-      console.error(error)
+      // Revert optimistic update on failure
+      setPatients(previous)
+      const msg = error instanceof Error ? error.message : String(error)
+      alert('Failed to delete patient: ' + msg)
+      console.error('deletePatient error:', error)
+    } finally {
+      setDeleteTarget(null)
     }
   }
+
+  // Called when user confirms deletion in modal
+  async function confirmDelete() {
+    if (!deleteTarget) return
+    await handleDelete(deleteTarget.id)
+  }
+
+  // Debugging: log when delete modal opens/closes
+  useEffect(() => {
+    if (deleteTarget) {
+      console.log('Delete modal opened for', deleteTarget.id, deleteTarget.name)
+    } else {
+      console.log('Delete modal closed')
+    }
+  }, [deleteTarget])
 
   const filtered = patients.filter((p: Patient) => p.name.toLowerCase().includes(query.toLowerCase()))
 
@@ -113,17 +135,17 @@ export default function Patients() {
         <div className="bg-white rounded-lg shadow-sm p-6 mb-4">
           <div className="flex justify-between items-center mb-4">
             <h1 className="text-2xl font-bold">Patient List</h1>
-            <button 
-              onClick={() => { setEditingPatient(null); setShowForm(true) }} 
+            <button
+              onClick={() => { setEditingPatient(null); setShowForm(true) }}
               className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 font-medium"
             >
               Add Patient
             </button>
           </div>
-          <input 
-            placeholder="Search patients..." 
-            value={query} 
-            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)} 
+          <input
+            placeholder="Search patients..."
+            value={query}
+            onChange={(e: React.ChangeEvent<HTMLInputElement>) => setQuery(e.target.value)}
             className="w-full border-2 border-gray-300 rounded px-4 py-2 focus:outline-none focus:border-blue-500"
           />
         </div>
@@ -140,14 +162,21 @@ export default function Patients() {
                   <Link to={`/patients/${p.id}`} className="font-medium hover:underline">
                     {p.name} {p.created_at && <span className="text-sm ml-2">{p.created_at}</span>}
                   </Link>
-                  <button 
-                    onClick={() => handleDelete(p.id)}
-                    className="bg-blue-700 hover:bg-blue-600 px-4 py-1 rounded text-sm"
-                  >
-                    Delete
-                  </button>
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={(e) => { e.stopPropagation(); setEditingPatient(p); setShowForm(true); setDeleteTarget(null) }}
+                      className="bg-yellow-500 hover:bg-yellow-400 px-3 py-1 rounded text-sm"
+                    >
+                      Edit
+                    </button>
+                        <button 
+                          onClick={(e) => { e.stopPropagation(); console.log('Delete button clicked for', p.id); setDeleteTarget(p); setShowForm(false) }}
+                          className="bg-blue-700 hover:bg-blue-600 px-4 py-1 rounded text-sm"
+                        >
+                          Delete
+                        </button>                  </div>
                 </div>
-                <div className="p-4 grid grid-cols-4 gap-4 text-sm">
+                <div className="p-4 grid grid-cols-5 gap-4 text-sm">
                   <div>
                     <span className="font-medium">Phone:</span> {p.phone || '-'}
                   </div>
@@ -156,6 +185,9 @@ export default function Patients() {
                   </div>
                   <div>
                     <span className="font-medium">Age:</span> {p.age}
+                  </div>
+                  <div>
+                    <span className="font-medium">Sex:</span> {p.gender || '-'}
                   </div>
                   <div>
                     <span className="font-medium">Serial No:</span> {p.id}
@@ -174,6 +206,60 @@ export default function Patients() {
           onCancel={() => { setShowForm(false); setEditingPatient(null) }}
         />
       )}
+
+      {/* Delete confirmation modal */}
+      {deleteTarget && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            backgroundColor: 'rgba(0,0,0,0.45)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: 8,
+              boxShadow: '0 10px 30px rgba(0,0,0,0.2)',
+              padding: 24,
+              maxWidth: 420,
+              width: '90%',
+            }}
+          >
+            <h3 className="text-lg font-semibold mb-2">Confirm Delete</h3>
+            <p className="text-sm text-gray-700 mb-4">
+              Are you sure you want to delete <span className="font-semibold">{deleteTarget.name}</span>?
+            </p>
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => {
+                  console.log('Cancel clicked');
+                  setDeleteTarget(null);
+                }}
+                className="px-4 py-2 rounded bg-gray-200 hover:bg-gray-300"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  console.log('Confirm delete for', deleteTarget.id);
+                  confirmDelete();
+                }}
+                className="px-4 py-2 rounded bg-red-600 text-white hover:bg-red-700"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
