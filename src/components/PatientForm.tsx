@@ -85,6 +85,18 @@ export default function PatientForm({ patient, onSave, onCancel }: PatientFormPr
               />
             </div>
             <div>
+              <label className="block text-sm font-medium mb-2">Sex:</label>
+              <select
+                className="w-full border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"
+                value={formData.gender}
+                onChange={(e) => setFormData({ ...formData, gender: e.target.value })}
+              >
+                <option value="Male">Male</option>
+                <option value="Female">Female</option>
+                <option value="Other">Other</option>
+              </select>
+            </div>
+            <div>
               <label className="block text-sm font-medium mb-2">Blood Group:</label>
               <select
                 className="w-full border-2 border-gray-300 rounded px-3 py-2 focus:outline-none focus:border-blue-500"

@@ -1,346 +1,55 @@
-import React, { useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect } from 'react'
+import { useNavigate, useSearchParams } from 'react-router-dom'
 import { addVisit, addPrescription, getPatient, listPatients as listPatientsApi, addPatient } from '../api/tauri'
 import PatientForm from '../components/PatientForm'
-import { searchMedicines, type Medicine } from '../data/medicines'
-
-// Search Modal Component
-interface SearchModalProps {
-  title: string
-  isOpen: boolean
-  onClose: () => void
-  searchItems: string[]
-  onAdd: (item: string, duration?: string, note?: string) => void
-  showDuration?: boolean
-  showNote?: boolean
-}
-
-function SearchModal({ title, isOpen, onClose, searchItems, onAdd, showDuration, showNote }: SearchModalProps) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedItem, setSelectedItem] = useState('')
-  const [duration, setDuration] = useState('')
-  const [note, setNote] = useState('')
-
-  if (!isOpen) return null
-
-  const filteredItems = searchItems.filter(item =>
-    item.toLowerCase().includes(searchTerm.toLowerCase())
-  )
-
-  const handleAdd = () => {
-    if (selectedItem) {
-      onAdd(selectedItem, duration, note)
-      setSelectedItem('')
-      setDuration('')
-      setNote('')
-      onClose()
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[700px] max-h-[600px] flex flex-col">
-        <div className="bg-gray-800 text-white px-4 py-2 rounded-t-lg flex justify-between items-center">
-          <span className="text-sm">{title}</span>
-          <button onClick={onClose} className="text-white hover:text-gray-300">✕</button>
-        </div>
-        
-        <div className="p-4 flex-1 overflow-auto">
-          <div className="mb-4">
-            <input
-              type="text"
-              placeholder="🔍"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full px-4 py-2 border-2 border-gray-300 rounded-full focus:outline-none focus:border-gray-500"
-            />
-          </div>
-
-          <div className="bg-gray-100 p-3 rounded mb-4 min-h-[100px]">
-            <div className="flex flex-wrap gap-2">
-              {filteredItems.map((item, idx) => (
-                <button
-                  key={idx}
-                  onClick={() => setSelectedItem(item)}
-                  className={`px-3 py-1 rounded ${
-                    selectedItem === item
-                      ? 'bg-gray-500 text-white'
-                      : 'bg-white text-gray-700 hover:bg-gray-100'
-                  }`}
-                >
-                  {item}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {selectedItem && (
-            <div className="space-y-3 bg-gray-50 p-4 rounded">
-              <div className="flex items-center gap-3">
-                <span className="font-medium min-w-[100px]">{selectedItem}</span>
-                {showDuration && (
-                  <select
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className="px-3 py-1 border border-gray-300 rounded"
-                  >
-                    <option value="">দিন</option>
-                    <option value="1 দিন">1 দিন</option>
-                    <option value="3 দিন">3 দিন</option>
-                    <option value="7 দিন">7 দিন</option>
-                    <option value="15 দিন">15 দিন</option>
-                    <option value="1 মাস">1 মাস</option>
-                  </select>
-                )}
-                {showNote && (
-                  <input
-                    type="text"
-                    placeholder="Note"
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    className="flex-1 px-3 py-1 border border-gray-300 rounded"
-                  />
-                )}
-                <button
-                  onClick={() => setSelectedItem('')}
-                  className="text-red-500 hover:text-red-700"
-                >
-                  ✕
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="bg-gray-300 px-4 py-3 rounded-b-lg">
-          <button
-            onClick={handleAdd}
-            className="w-full text-gray-700 font-medium hover:text-gray-900"
-          >
-            Add To Prescription
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-// Medicine Search Modal
-function MedicineSearchModal({ isOpen, onClose, onAdd }: any) {
-  const [searchTerm, setSearchTerm] = useState('')
-  const [selectedMedicine, setSelectedMedicine] = useState<Medicine | null>(null)
-  const [schedule, setSchedule] = useState({ morning: 0, noon: 0, evening: 0, night: 0 })
-  const [unit, setUnit] = useState('টি')
-  const [beforeAfterMeal, setBeforeAfterMeal] = useState('')
-  const [duration, setDuration] = useState('')
-
-  if (!isOpen) return null
-
-  // Use the search function from medicines database
-  const filteredMedicines = searchTerm ? searchMedicines(searchTerm) : []
-
-  const handleAdd = () => {
-    if (selectedMedicine) {
-      const scheduleText = `${schedule.morning} + ${schedule.noon} + ${schedule.evening} + ${schedule.night}`
-      onAdd({
-        medicine: selectedMedicine.brand,
-        genericName: selectedMedicine.generic,
-        schedule: scheduleText,
-        unit,
-        beforeAfterMeal,
-        duration
-      })
-      setSelectedMedicine(null)
-      setSchedule({ morning: 0, noon: 0, evening: 0, night: 0 })
-      onClose()
-    }
-  }
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div className="bg-white rounded-lg shadow-xl w-[900px] max-h-[700px] flex flex-col">
-        <div className="bg-gray-800 text-white px-4 py-2 rounded-t-lg flex justify-between items-center">
-          <span className="text-sm">Medicine Search</span>
-          <button onClick={onClose} className="text-white hover:text-gray-300">✕</button>
-        </div>
-        
-        <div className="p-4 flex-1 overflow-auto">
-          <div className="mb-4 flex gap-2">
-            <input
-              type="text"
-              placeholder="🔍"
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="flex-1 px-4 py-2 border-2 border-gray-300 rounded-full"
-            />
-            <button className="px-4 py-2 bg-gray-200 rounded-full">⊕ Create</button>
-            <select className="px-4 py-2 border-2 border-gray-300 rounded">
-              <option>Brand Name</option>
-            </select>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 mb-4">
-            <div>
-              <div className="bg-gray-200 text-center py-2 font-medium mb-2">Medicine</div>
-              <div className="bg-gray-100 p-3 rounded min-h-[200px] max-h-[300px] overflow-auto">
-                <div className="space-y-1">
-                  {filteredMedicines.map((med, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedMedicine(med)}
-                      className={`w-full text-left px-3 py-2 rounded transition-colors ${
-                        selectedMedicine === med
-                          ? 'bg-blue-600 text-white'
-                          : 'bg-white hover:bg-blue-50'
-                      }`}
-                    >
-                      <div className="font-medium text-sm">
-                        {med.brand} {med.strength && `- ${med.strength}`}
-                      </div>
-                      <div className={`text-xs mt-1 ${selectedMedicine === med ? 'text-blue-100' : 'text-gray-500'}`}>
-                        {med.generic} {med.dosageForm && `(${med.dosageForm})`}
-                      </div>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            <div>
-              <div className="bg-gray-200 text-center py-2 font-medium mb-2">Medicine Group</div>
-              <div className="bg-gray-100 p-3 rounded min-h-[200px]"></div>
-            </div>
-          </div>
-
-          {selectedMedicine && (
-            <div className="bg-blue-50 p-4 rounded border-2 border-blue-200">
-              <div className="mb-3 bg-white p-3 rounded shadow-sm">
-                <div className="font-bold text-gray-900 text-lg">
-                  {selectedMedicine.brand} {selectedMedicine.strength && `${selectedMedicine.strength}`}
-                </div>
-                <div className="text-sm text-blue-700 font-medium mt-1">
-                  Generic: {selectedMedicine.generic}
-                </div>
-                {selectedMedicine.dosageForm && (
-                  <div className="text-xs text-gray-600 mt-1">
-                    Form: {selectedMedicine.dosageForm}
-                  </div>
-                )}
-                {selectedMedicine.manufacturer && (
-                  <div className="text-xs text-gray-600">
-                    Manufacturer: {selectedMedicine.manufacturer}
-                  </div>
-                )}
-              </div>
-              
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <div className="font-medium mb-2">Schedule</div>
-                  <div className="flex items-center gap-2 mb-3">
-                    <input
-                      type="number"
-                      min="0"
-                      value={schedule.morning}
-                      onChange={(e) => setSchedule({...schedule, morning: parseInt(e.target.value) || 0})}
-                      className="w-16 px-2 py-1 border rounded text-center"
-                    />
-                    <span>+</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={schedule.noon}
-                      onChange={(e) => setSchedule({...schedule, noon: parseInt(e.target.value) || 0})}
-                      className="w-16 px-2 py-1 border rounded text-center"
-                    />
-                    <span>+</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={schedule.evening}
-                      onChange={(e) => setSchedule({...schedule, evening: parseInt(e.target.value) || 0})}
-                      className="w-16 px-2 py-1 border rounded text-center"
-                    />
-                    <span>+</span>
-                    <input
-                      type="number"
-                      min="0"
-                      value={schedule.night}
-                      onChange={(e) => setSchedule({...schedule, night: parseInt(e.target.value) || 0})}
-                      className="w-16 px-2 py-1 border rounded text-center"
-                    />
-                  </div>
-
-                  <div className="font-medium mb-2">Unit</div>
-                  <select
-                    value={unit}
-                    onChange={(e) => setUnit(e.target.value)}
-                    className="w-full px-3 py-2 border rounded mb-3"
-                  >
-                    <option value="টি">টি</option>
-                    <option value="ml">ml</option>
-                    <option value="gm">gm</option>
-                  </select>
-
-                  <div className="flex gap-2">
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={beforeAfterMeal === 'খাওয়ার আগে'}
-                        onChange={() => setBeforeAfterMeal(beforeAfterMeal === 'খাওয়ার আগে' ? '' : 'খাওয়ার আগে')}
-                        className="mr-2"
-                      />
-                      খাওয়ার আগে
-                    </label>
-                    <label className="flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={beforeAfterMeal === 'খাওয়ার পরে'}
-                        onChange={() => setBeforeAfterMeal(beforeAfterMeal === 'খাওয়ার পরে' ? '' : 'খাওয়ার পরে')}
-                        className="mr-2"
-                      />
-                      খাওয়ার পরে
-                    </label>
-                  </div>
-                </div>
-
-                <div>
-                  <div className="font-medium mb-2">Note</div>
-                  <input
-                    type="text"
-                    placeholder="Duration (e.g., 10 দিন)"
-                    value={duration}
-                    onChange={(e) => setDuration(e.target.value)}
-                    className="w-full px-3 py-2 border rounded"
-                  />
-                </div>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="grid grid-cols-2">
-          <button
-            onClick={handleAdd}
-            className="bg-gray-300 px-4 py-3 font-medium hover:bg-gray-400"
-          >
-            Add To Prescription
-          </button>
-          <button className="bg-gray-400 px-4 py-3 font-medium hover:bg-gray-500">
-            Create Medicine Group
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}
+import SearchModal from '../components/prescription/SearchModal'
+import MedicineSearchModal from '../components/prescription/MedicineSearchModal'
+import PrescriptionHeader from '../components/prescription/PrescriptionHeader'
+import PatientInfoBar from '../components/prescription/PatientInfoBar'
+import PrescriptionSection from '../components/prescription/PrescriptionSection'
+import PrintStyles from '../components/prescription/PrintStyles'
+import { 
+  complaintItems, 
+  historyItems, 
+  examinationItems, 
+  investigationItems, 
+  diagnosisItems, 
+  treatmentItems, 
+  adviceItems, 
+  followUpItems 
+} from '../data/prescriptionItems'
 
 export default function Prescription() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
   const [patientName, setPatientName] = useState('')
   const [patientAge, setPatientAge] = useState('')
+  const [patientGender, setPatientGender] = useState('')
   const [patientId, setPatientId] = useState('')
   const [showAddPatientModal, setShowAddPatientModal] = useState(false)
   const [searchPatientQuery, setSearchPatientQuery] = useState('')
+
+  // Load patient data from URL params if available
+  useEffect(() => {
+    const patientIdFromUrl = searchParams.get('patientId')
+    if (patientIdFromUrl) {
+      loadPatientData(patientIdFromUrl)
+    }
+  }, [searchParams])
+
+  async function loadPatientData(id: string) {
+    try {
+      const patientData: any = await getPatient(parseInt(id))
+      if (patientData) {
+        setPatientId(id)
+        setPatientName(patientData.name)
+        setPatientAge(patientData.age.toString())
+        setPatientGender(patientData.gender || '')
+      }
+    } catch (error) {
+      console.error('Failed to load patient data:', error)
+    }
+  }
 
   // Modal states
   const [activeModal, setActiveModal] = useState<string | null>(null)
@@ -356,16 +65,6 @@ export default function Prescription() {
   const [advices, setAdvices] = useState<string[]>([])
   const [followUps, setFollowUps] = useState<string[]>([])
   const [specialNotes, setSpecialNotes] = useState<string[]>([])
-
-  // Search items
-  const complaintItems = ['Fever', 'Cough', 'Headache', 'Body ache', 'Chest pain', 'Shortness of breath', 'Abdominal pain', 'Nausea', 'Vomiting', 'Diarrhea', 'Dizziness', 'Weakness', 'Loss of appetite', 'Weight loss', 'Insomnia', 'Sore throat', 'Running nose', 'জ্বর', 'কাশি', 'মাথা ব্যথা', 'পেট ব্যথা']
-  const historyItems = ['HTN (Hypertension)', 'DM (Diabetes Mellitus)', 'Asthma', 'COPD', 'IHD (Ischemic Heart Disease)', 'Stroke', 'CKD (Chronic Kidney Disease)', 'Thyroid disorder', 'Previous surgery', 'Drug allergy', 'Family history of DM', 'Family history of HTN', 'Smoking history', 'Alcohol history']
-  const examinationItems = ['BP-120/80 mm Hg', 'BP-140/90 mm Hg', 'Pulse-80/min', 'Temp-98.6°F', 'Temp-100°F', 'RR-18/min', 'Weight-65 kg', 'Weight-70 kg', 'Height-170 cm', 'BMI-24', 'Pallor present', 'Jaundice present', 'Edema present', 'Lymphadenopathy', 'Thyroid enlarged']
-  const investigationItems = ['CBC (Complete Blood Count)', 'RBS (Random Blood Sugar)', 'FBS (Fasting Blood Sugar)', 'HbA1c', 'Lipid profile', 'Creatinine', 'Urea', 'Electrolytes', 'Liver function test', 'Thyroid function test', 'ECG', 'Chest X-ray', 'Ultrasound abdomen', 'Urine R/E', 'Stool R/E']
-  const diagnosisItems = ['HTN (Hypertension)', 'Type 2 DM', 'URTI (Upper Respiratory Tract Infection)', 'Gastritis', 'Peptic ulcer disease', 'Asthma', 'COPD', 'Pneumonia', 'UTI (Urinary Tract Infection)', 'Typhoid fever', 'Dengue fever', 'Hypothyroidism', 'Hyperthyroidism', 'Anemia', 'Migraine']
-  const treatmentItems = ['Bed rest', 'Plenty of fluid intake', 'Avoid oily/spicy food', 'Light diet', 'Low salt diet', 'Diabetic diet', 'Regular exercise', 'Weight reduction', 'Avoid smoking', 'Avoid alcohol', 'Strict glucose control']
-  const adviceItems = ['Take adequate rest', 'Drink plenty of water', 'Avoid cold drinks', 'Avoid outside food', 'Maintain personal hygiene', 'Regular hand washing', 'Use mosquito net', 'Check blood pressure regularly', 'Check blood sugar regularly', 'Maintain food chart', 'Regular exercise 30 min daily']
-  const followUpItems = ['After 7 days', 'After 15 days', 'After 1 month', 'After 3 months', 'After 6 months', 'With reports', 'If condition worsens', 'SOS (If needed)', 'Regular follow-up', '৭ দিন পর আসুন', '১৫ দিন পর আসুন', 'রিপোর্ট নিয়ে আসুন']
 
   const handleAddItem = (type: string, item: string, duration?: string, note?: string) => {
     let displayText = item
@@ -443,76 +142,12 @@ export default function Prescription() {
   }
 
   const currentDate = new Date().toLocaleDateString('en-GB', { day: '2-digit', month: '2-digit', year: 'numeric' }).replace(/\//g, '.')
+  const currentTime = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })
+  const currentDateTime = new Date().toISOString()
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Print Styles */}
-      <style dangerouslySetInnerHTML={{__html: `
-        @media print {
-          body * {
-            visibility: hidden;
-          }
-          .print-area, .print-area * {
-            visibility: visible;
-          }
-          .print-area {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20mm;
-          }
-          .no-print {
-            display: none !important;
-          }
-          @page {
-            size: A4;
-            margin: 0;
-          }
-          .print-area {
-            page-break-after: avoid;
-          }
-          /* Reduce spacing for print */
-          .print-area h1 {
-            font-size: 18pt !important;
-          }
-          .print-area h2 {
-            font-size: 16pt !important;
-          }
-          .print-area .text-sm {
-            font-size: 10pt !important;
-          }
-          .print-area .text-xs {
-            font-size: 8pt !important;
-          }
-          .print-area .p-4 {
-            padding: 6px 0 !important;
-          }
-          .print-area .p-6 {
-            padding: 10px 0 !important;
-          }
-          .print-area .mb-4 {
-            margin-bottom: 6px !important;
-          }
-          .print-area .space-y-4 > * + * {
-            margin-top: 12px !important;
-          }
-          .print-area .border-l-4 {
-            border-left: none !important;
-          }
-          .print-area .bg-white {
-            background: transparent !important;
-          }
-          .print-only {
-            display: block !important;
-          }
-          .print-area .border-t-2 {
-            border-top: 1px solid #000 !important;
-             margin-top: 15px !important;
-            padding-top: 10px !important;
-          }
-        }
-      `}} />
+      <PrintStyles />
       
       {/* Action Bar - Hide on print */}
       <div className="bg-white border-b px-6 py-3 flex justify-between items-center no-print">
@@ -530,42 +165,13 @@ export default function Prescription() {
             🖨 Print / Download
           </button>
         </div>
-        {/* <div className="flex gap-3">
-          <button 
-            onClick={() => window.location.reload()}
-            className="px-4 py-2 bg-green-500 text-white rounded hover:bg-green-600 flex items-center gap-2"
-          >
-            ⊕ New Prescription
-          </button>
-          <button 
-            onClick={() => window.print()}
-            className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 flex items-center gap-2"
-          >
-            🖨 Print Preview
-          </button>
-          <div className="relative">
-            <input
-              type="text"
-              placeholder="🔍 Search Prescription"
-              className="px-4 py-2 border-2 border-gray-300 rounded w-64"
-            />
-          </div>
-        </div> */}
+       
       </div>
 
       <div className="p-6 print-area">
         {/* Doctor Header */}
         <div className="p-6 mb-0">
-          {/* <div className="text-center mb-4">
-            <div className="grid grid-cols-5 gap-2 text-xs text-gray-500">
-              <div>WHO<br/>যিনি</div>
-              <div>makes<br/>রোগ</div>
-              <div>(you)ill,<br/>দিয়েছেন,</div>
-              <div>regulates all things.<br/>তিনিই সবকিছু করেন।</div>
-              <div>Pray to HIM.<br/>তাঁরই করুণা যাচেন।</div>
-            </div>
-            <hr className="my-2"/>
-          </div> */}
+       
           <div className="flex justify-between items-center ">
             <div>
               <h1 className="text-3xl font-bold text-gray-600 mb-1">BIJOY SING</h1>
@@ -629,6 +235,16 @@ export default function Prescription() {
               placeholder="Age"
             />
           </div>
+            <div className="flex items-center gap-1 ml-4">
+            <span className="font-bold">Sex:</span>
+            <input 
+              type="text" 
+              value={patientGender}
+              onChange={(e) => setPatientGender(e.target.value)}
+              className="bg-white border border-gray-400 px-2 py-0.5 w-16" 
+              placeholder="Sex"
+            />
+          </div>
           <div className="flex items-center gap-1 ml-4">
             <span className="font-bold">Date:</span>
             <input 
@@ -640,11 +256,6 @@ export default function Prescription() {
           </div>
           <div className="flex items-center gap-1 ml-4">
             <span className="font-bold">Id:</span>
-            {/* <button 
-              className="text-gray-600 hover:text-gray-800 text-xs ml-1"
-            >
-              🔍 Search Patient */}
-            {/* </button> */}
             <input 
               type="text"
               value={patientId}
@@ -789,31 +400,7 @@ export default function Prescription() {
               )}
             </div>
 
-            {/* Treatment Plan */}
-            <div className="mb-3">
-              <button
-                onClick={() => setActiveModal('treatment')}
-                className="font-bold text-gray-900 mb-1 hover:text-gray-600 text-sm no-print"
-              >
-                Treatment Plan +
-              </button>
-              <div className="font-bold text-gray-900 text-sm print-only hidden">Treatment:</div>
-              {treatmentPlans.length > 0 && (
-                <div className="text-sm text-gray-700 ml-4">
-                  {treatmentPlans.map((item, idx) => (
-                    <div key={idx} className="mb-1">
-                      • {item}
-                      <button
-                        onClick={() => removeItem('treatment', idx)}
-                        className="text-red-500 hover:text-red-700 ml-2 text-xs no-print"
-                      >
-                        ×
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
+           
           </div>
 
           {/* Right Column */}
@@ -920,17 +507,28 @@ export default function Prescription() {
                 
                 // Create a visit with all prescription details
                 const notes = JSON.stringify({
+                  visitDateTime: currentDateTime,
+                  visitDate: currentDate,
+                  visitTime: currentTime,
+                  patientInfo: {
+                    name: patientName,
+                    age: patientAge,
+                    gender: patientGender,
+                    id: patientId
+                  },
                   chiefComplaints,
                   histories,
                   examinations,
                   investigations,
                   diagnoses,
+                  medicines,
                   treatmentPlans,
                   advices,
-                  followUps
+                  followUps,
+                  specialNotes
                 })
                 
-                const visitId = await addVisit(parseInt(patientId), currentDate, notes)
+                const visitId = await addVisit(parseInt(patientId), currentDateTime, notes)
                 
                 // Add all medicines as prescriptions
                 for (const med of medicines) {
@@ -960,17 +558,28 @@ export default function Prescription() {
                 
                 // Create a visit with all prescription details
                 const notes = JSON.stringify({
+                  visitDateTime: currentDateTime,
+                  visitDate: currentDate,
+                  visitTime: currentTime,
+                  patientInfo: {
+                    name: patientName,
+                    age: patientAge,
+                    gender: patientGender,
+                    id: patientId
+                  },
                   chiefComplaints,
                   histories,
                   examinations,
                   investigations,
                   diagnoses,
+                  medicines,
                   treatmentPlans,
                   advices,
-                  followUps
+                  followUps,
+                  specialNotes
                 })
                 
-                const visitId = await addVisit(parseInt(patientId), currentDate, notes)
+                const visitId = await addVisit(parseInt(patientId), currentDateTime, notes)
                 
                 // Add all medicines as prescriptions
                 for (const med of medicines) {
@@ -1106,6 +715,7 @@ export default function Prescription() {
               // Set the newly created patient's info
               setPatientName(patientData.name)
               setPatientAge(patientData.age.toString())
+              setPatientGender(patientData.gender || '')
               setPatientId(result?.toString() || '')
               setShowAddPatientModal(false)
               
@@ -1118,6 +728,7 @@ export default function Prescription() {
                 // In demo mode, just set the patient info without saving to database
                 setPatientName(patientData.name)
                 setPatientAge(patientData.age.toString())
+                setPatientGender(patientData.gender || '')
                 setPatientId(Date.now().toString()) // Generate a temporary ID
                 setShowAddPatientModal(false)
                 

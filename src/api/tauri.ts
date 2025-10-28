@@ -1,3 +1,5 @@
+import { invoke } from '@tauri-apps/api/tauri';
+
 // Lazy-loaded Tauri APIs
 let _invoke: any = null
 let _initPromise: Promise<void> | null = null
@@ -44,8 +46,18 @@ export async function updatePatient(id: number, name: string, age: number, gende
 }
 
 export async function deletePatient(id: number) {
-  await initTauriApis()
-  return await _invoke('delete_patient', { id })
+  try {
+    await initTauriApis()
+    return await _invoke('delete_patient', { id })
+  } catch (err) {
+    console.warn('deletePatient: initTauriApis failed or _invoke unavailable, falling back to direct invoke', err)
+    try {
+      return await invoke('delete_patient', { id })
+    } catch (e) {
+      console.error('deletePatient: direct invoke failed', e)
+      throw e
+    }
+  }
 }
 
 export async function getPatient(id: number) {
@@ -68,6 +80,11 @@ export async function getPatientVisits(patientId: number) {
   return await _invoke('get_patient_visits', { patientId })
 }
 
+export async function getVisit(visitId: number) {
+  await initTauriApis()
+  return await _invoke('get_visit', { visitId })
+}
+
 export async function addPrescription(visitId: number, medicine: string, genericName: string, dosage: string, instructions: string) {
   await initTauriApis()
   return await _invoke('add_prescription', { visitId, medicine, genericName, dosage, instructions })
@@ -81,4 +98,8 @@ export async function getVisitPrescriptions(visitId: number) {
 export async function getStatistics() {
   await initTauriApis()
   return await _invoke('get_statistics')
+}
+
+export async function deleteVisit(visitId: number) {
+  return await invoke('delete_visit', { visitId });
 }
