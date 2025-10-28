@@ -15,7 +15,7 @@ export default function PrintStyles() {
           left: 0;
           top: 0;
           width: 100%;
-          padding: 20mm;
+          padding: 5mm;
         }
         .no-print {
           display: none !important;

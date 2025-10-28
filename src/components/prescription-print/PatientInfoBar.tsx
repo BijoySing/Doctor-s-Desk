@@ -12,7 +12,7 @@ interface PatientInfoBarProps {
 
 export default function PatientInfoBar({ patient }: PatientInfoBarProps) {
   return (
-    <div className="bg-gray-200 border border-gray-100 p-2 mb-4 flex items-center text-sm">
+    <div className="bg-gray-200 border border-gray-100 p-2 mb-4 flex items-center justify-between text-sm">
       <div className="flex items-center gap-1">
         <span className="font-bold">Name:</span>
         <span className="ml-2">{patient.name}</span>
